@@ -60,7 +60,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: myColor,
-        title: Text("Books",style: TextStyle(color: Colors.black),),
+        title: Text("Books Store",style: TextStyle(color: Colors.black,fontFamily: 'Satisfy'),),
         centerTitle: true,
         actions: [
           Center(

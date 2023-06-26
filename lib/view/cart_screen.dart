@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:badges/badges.dart'as badge;
 import 'package:provider/provider.dart';
+import 'package:shani_book_store/helper/dbhelper.dart';
+import 'package:shani_book_store/view/product_list_screen.dart';
 import '../Model/cart_model.dart';
 import '../provider/book_provider.dart';
 class CartScreen extends StatefulWidget {
@@ -9,16 +11,19 @@ class CartScreen extends StatefulWidget {
   @override
   State<CartScreen> createState() => _CartScreenState();
 }
+final Color myColor= Color(0xffC4E7ED);
 
 class _CartScreenState extends State<CartScreen> {
-  final Color myColor= Color(0xffC4E7ED);
+
+  DbHelper db = DbHelper();
+
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<BookProvider>(context);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: myColor,
-        title: Text("Books",style: TextStyle(color: Colors.black),),
+        title: Text("Cart Screen",style: TextStyle(color: Colors.black,fontFamily: 'Satisfy',),),
         centerTitle: true,
         actions: [
           Center(
@@ -45,6 +50,38 @@ class _CartScreenState extends State<CartScreen> {
             future: cart.getDate(),
               builder: (context,AsyncSnapshot <List<Cart>>snapshot){
             if(snapshot.hasData){
+              if (snapshot.data!.isEmpty) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Center(
+                      child: Image(
+                          image: NetworkImage(
+                              'https://cdni.iconscout.com/illustration/premium/thumb/empty-cart-4816550-4004141.png')),
+                    ),
+                    const Text(
+                      'Looks like you haven'
+                      r't added anything to your cart',
+                    ),
+                    TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const ProductListScreen()));
+                        },
+                        child: const Text(
+                          'Explore now',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            decoration: TextDecoration.underline,
+                          ),
+                          selectionColor: Colors.lightBlue,
+                        ))
+                  ],
+                );
+              }
               return Expanded(
                   child: ListView.builder(
                   itemCount: snapshot.data!.length,
@@ -69,7 +106,20 @@ class _CartScreenState extends State<CartScreen> {
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(snapshot.data![index].productName.toString(),style: TextStyle(fontWeight: FontWeight.bold),),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(snapshot.data![index].productName.toString(),style: TextStyle(fontWeight: FontWeight.bold),),
+                                      InkWell(
+                                          onTap: (){
+                                            db.delete(snapshot.data![index].id!);
+                                            cart.removeCounter();
+                                            cart.removeTotalPrice(double.parse(snapshot.data![index].productPrice.toString()));
+
+                                          },
+                                          child: Icon(Icons.delete)),
+                                    ],
+                                  ),
                                   SizedBox(height: 10,),
                                   Text(snapshot.data![index].productPrice.toString()+" Rs"),
                                   SizedBox(height: 20,),
@@ -106,10 +156,13 @@ class _CartScreenState extends State<CartScreen> {
 
           }),
           Consumer<BookProvider>(builder: (context,value,child){
-            return Column(
-              children: [
-                Reusable(title: "Subtotal", value: value.getTotalPrice().toStringAsFixed(2))
-              ],
+            return Visibility(
+              visible: value.getTotalPrice().toStringAsFixed(2)=="0.0" ? false:true,
+              child: Column(
+                children: [
+                  Center(child: Reusable(title: " Subtotal ", value: value.getTotalPrice().toStringAsFixed(2)))
+                ],
+              ),
             );
           })
         ],
@@ -124,13 +177,19 @@ class Reusable extends StatelessWidget {
   final String title, value;
   @override
   Widget build(BuildContext context) {
-    return Padding(padding: EdgeInsets.all(10),
-    child: Row(
-      children: [
-        Text(title),
-        Text(value),
-
-      ],
-    ),
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 10),
+      child: Container(
+        width: double.infinity,
+        height: 50,
+        color: myColor,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title,style: TextStyle(fontWeight: FontWeight.bold,),),
+          Text(value,style: TextStyle(fontWeight: FontWeight.bold,),)
+        ],
+        ),
+      ),
     );
 }}
