@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:badges/badges.dart' as badge;
+import 'package:provider/provider.dart';
+import 'package:shani_book_store/Model/cart_model.dart';
+import 'package:shani_book_store/helper/dbhelper.dart';
+import 'package:shani_book_store/provider/book_provider.dart';
 import 'package:shani_book_store/view/cart_screen.dart';
 class ProductListScreen extends StatefulWidget {
   const ProductListScreen({Key? key}) : super(key: key);
@@ -9,6 +13,7 @@ class ProductListScreen extends StatefulWidget {
 }
 
 class _ProductListScreenState extends State<ProductListScreen> {
+
   final Color myColor= Color(0xffC4E7ED);
   List<int> productPrice = [10, 20, 30, 40, 50, 60, 70, 90, 66, 43];
   List<String> bookAuthor = [
@@ -50,6 +55,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
   final seachController= TextEditingController();
   @override
   Widget build(BuildContext context) {
+    DbHelper db = DbHelper();
+    final cart = Provider.of<BookProvider>(context);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: myColor,
@@ -61,7 +68,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
               onTap: (){ Navigator.push(context, MaterialPageRoute(builder: (context)=>CartScreen()));},
               child: badge.Badge(
                 child: Icon(Icons.shopping_cart,color: Colors.black,),
-                badgeContent: Text("0",style: TextStyle(color: Colors.white),
+                badgeContent: Consumer<BookProvider>(
+                  builder: (context,value,child){
+                    return Text(value.getCounter().toString(),style: TextStyle(color: Colors.white));
+                  },
                 ),
 
               ),
@@ -86,7 +96,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
             ),
           ),),
           SizedBox(height: 15,),
-         Expanded(child: ListView.builder(
+         Expanded(
+             child: ListView.builder(
              itemCount: bookCovers.length,
              itemBuilder: (context,index){
            return Card(
@@ -115,8 +126,21 @@ class _ProductListScreenState extends State<ProductListScreen> {
                          SizedBox(height: 20,),
                          InkWell(
                            onTap: (){
-
-
+                             db.insert(Cart(
+                                 id: index,
+                                 productPrice: productPrice[index],
+                                 image: bookCovers[index].toString(),
+                                 productName: bookNames[index].toString(),
+                                 initialPrice: productPrice[index],
+                                 quantity: 1,
+                                 productId: index.toString(),
+                                  productAuthor: bookAuthor[index].toString())).then((value) {
+                                    cart.addTotalPrice(double.parse(productPrice[index].toString()));
+                                    cart.addCounter();
+                                    print('Item added');
+                                        }).onError((error, stackTrace) {
+                               print(error.toString());
+                                        });
                            },
                            child: Container(
                              decoration: BoxDecoration(
@@ -138,7 +162,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                ],
              ),
            );
-         }))
+         })
+         )
         ],
       )
     );
